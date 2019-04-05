@@ -1,13 +1,24 @@
-from __future__ import print_function
-from keras.callbacks import LambdaCallback
-from keras.models import Model, load_model, Sequential
-from keras.layers import Dense, Activation, Dropout, Input, Masking
-from keras.layers import LSTM
-from keras.utils.data_utils import get_file
-from keras.preprocessing.sequence import pad_sequences
+import warnings
+warnings.filterwarnings("ignore")
 from shakespeare_utils import *
-import sys
-import io
 
+from flask import Flask
+from flask import render_template, request
+app = Flask(__name__)
 
-generate_output()
+@app.route("/")
+def index():
+    return render_template('index.html')
+    #generate_output()
+
+@app.route("/post", methods=['GET', 'POST'])
+def post():
+    if request.method == 'POST':
+        start=request.form['linestart']
+        poem=generate_output(text=start)
+        poemlis=poem.split('\n')
+        return render_template('post.html', poemlis=poemlis)
+    else:
+        return render_template('index.html')
+if __name__ == '__main__':
+   app.run(debug = True)

@@ -6,10 +6,15 @@ from keras.layers import Dense, Activation, Dropout, Input, Masking
 from keras.layers import LSTM
 from keras.utils.data_utils import get_file
 from keras.preprocessing.sequence import pad_sequences
+from keras import backend as K
 import numpy as np
 import random
 import sys
 import io
+import tensorflow as tf
+
+
+	
 
 def build_data(text, Tx = 40, stride = 3):
     """
@@ -117,32 +122,42 @@ def on_epoch_end(epoch, logs):
 print("Loading text data...")
 text = io.open('shakespeare.txt', encoding='utf-8').read().lower()
 #print('corpus length:', len(text))
-
 Tx = 40
 chars = sorted(list(set(text)))
 char_indices = dict((c, i) for i, c in enumerate(chars))
 indices_char = dict((i, c) for i, c in enumerate(chars))
-#print('number of unique characters in the corpus:', len(chars))
+print('number of unique characters in the corpus:', len(chars))
 
 print("Creating training set...")
 X, Y = build_data(text, Tx, stride = 3)
-print("Vectorizing training set...")
-x, y = vectorization(X, Y, n_x = len(chars), char_indices = char_indices) 
+#print("Vectorizing training set...")
+#x, y = vectorization(X, Y, n_x = len(chars), char_indices = char_indices) 
+
 print("Loading model...")
-model = load_model('models/model_shakespeare_kiank.h5')
 
 
-def generate_output():
+model = load_model('models/model_shakespeare_kiank_350_epoch.h5')
+graph = tf.get_default_graph()
+
+def generate_output(text=None):
+    
     generated = ''
     #sentence = text[start_index: start_index + Tx]
     #sentence = '0'*Tx
-    usr_input = input("Write the beginning of your poem, the Shakespeare machine will complete it. Your input is: ")
+    if text==None:
+        usr_input = input("Write the beginning of your poem, the Shakespeare machine will complete it. Your input is: ")
+    else:
+        usr_input=text
+    
     # zero pad the sentence to Tx characters.
     sentence = ('{0:0>' + str(Tx) + '}').format(usr_input).lower()
     generated += usr_input 
 
-    sys.stdout.write("\n\nHere is your poem: \n\n") 
-    sys.stdout.write(usr_input)
+    #sys.stdout.write("\n\nHere is your poem: \n\n") 
+   
+    
+    #sys.stdout.write(usr_input)
+
     for i in range(400):
 
         x_pred = np.zeros((1, Tx, len(chars)))
@@ -150,16 +165,19 @@ def generate_output():
         for t, char in enumerate(sentence):
             if char != '0':
                 x_pred[0, t, char_indices[char]] = 1.
+        with graph.as_default():
+            preds = model.predict(x_pred, verbose=0)[0]
+            next_index = sample(preds, temperature = 1.0)
+            next_char = indices_char[next_index]
+             
+            
+            sentence = sentence[1:] + next_char
+            generated += next_char
+            #sys.stdout.write(next_char)
+            #sys.stdout.flush()
 
-        preds = model.predict(x_pred, verbose=0)[0]
-        next_index = sample(preds, temperature = 1.0)
-        next_char = indices_char[next_index]
+            if next_char == '\n':
+                continue
+    return(generated)
 
-        generated += next_char
-        sentence = sentence[1:] + next_char
-
-        sys.stdout.write(next_char)
-        sys.stdout.flush()
-
-        if next_char == '\n':
-            continue
+    

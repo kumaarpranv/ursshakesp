@@ -129,7 +129,7 @@ X, Y = build_data(text, Tx, stride = 3)
 print("Vectorizing training set...")
 x, y = vectorization(X, Y, n_x = len(chars), char_indices = char_indices) 
 print("Loading model...")
-model = load_model('models/model_shakespeare_kiank_350_epoch.h5')
+model = load_model('models/model_shakespeare_kiank.h5')
 
 
 def generate_output():
